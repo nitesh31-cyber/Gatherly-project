@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Gatherly – Online Event Management System</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f6f5fb;--card:#fff;--ink:#16132e;--mut:#625f7d;--line:#e2dff0;--pri:#5b3df5;--pri-t:#fff;--acc:#ff7a45;--mint:#2fd0a1;--ok:#1d9d72;--bad:#d33f5b;--warn:#c07f10;--side:#171233;--side-line:rgba(255,255,255,.12);--ease:cubic-bezier(.22,.8,.28,1);box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f0d20;--card:#191631;--ink:#efedff;--mut:#a29fc4;--line:#2b2749;--pri:#8a75ff;--pri-t:#0f0d20;--ok:#4cd6a5;--bad:#ff7d97;--warn:#f0b95c}}
+:root[data-theme="dark"]{--bg:#0f0d20;--card:#191631;--ink:#efedff;--mut:#a29fc4;--line:#2b2749;--pri:#8a75ff;--pri-t:#0f0d20;--ok:#4cd6a5;--bad:#ff7d97;--warn:#f0b95c}
+*{box-sizing:border-box}html{scroll-padding-top:80px}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Instrument Sans",system-ui,sans-serif}
+h1,h2,h3{font-family:"Bricolage Grotesque",system-ui,sans-serif;margin:0;letter-spacing:-.01em}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--pri);outline-offset:2px}
+
+/* ---------- Custom cursor ---------- */
+.has-custom-cursor,.has-custom-cursor *{cursor:none}
+#cur-dot,#cur-ring{position:fixed;top:0;left:0;border-radius:50%;pointer-events:none;z-index:99999;transform:translate(-50%,-50%);will-change:transform}
+#cur-dot{width:6px;height:6px;background:var(--pri);transition:opacity .15s,background-color .25s}
+#cur-ring{width:34px;height:34px;border:1.5px solid var(--pri);transition:width .25s var(--ease),height .25s var(--ease),background-color .25s,border-color .25s,opacity .15s,transform .15s}
+#cur-ring.hover{width:54px;height:54px;background:color-mix(in srgb,var(--pri) 16%,transparent)}
+#cur-ring.press{transform:translate(-50%,-50%) scale(.82)}
+#cur-ring.text-field,#cur-dot.text-field{opacity:0}
+.btn{background:var(--pri);color:var(--pri-t);border:0;border-radius:10px;padding:9px 16px;cursor:pointer;font-weight:600;transition:transform .22s var(--ease),box-shadow .22s var(--ease),opacity .2s}
+.btn:hover{transform:translateY(-1px);box-shadow:0 8px 18px -9px var(--pri)}.btn:active{transform:translateY(0)}
+.btn:disabled{opacity:.7;cursor:default;transform:none;box-shadow:none}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);box-shadow:none}
+.btn.bad{background:var(--bad);color:#fff}.btn.warn{background:var(--warn);color:#241a00}.btn.sm{padding:5px 11px;font-size:13px}
+input,select,textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);transition:border-color .2s,box-shadow .2s}
+input:focus,select:focus,textarea:focus{border-color:var(--pri);box-shadow:0 0 0 3px color-mix(in srgb,var(--pri) 18%,transparent)}
+input.err{border-color:var(--bad)}
+label{display:block;font-size:13px;color:var(--mut);margin:10px 0 4px}
+.field-err{color:var(--bad);font-size:12px;min-height:16px;margin-top:3px}
+
+/* ---------- Auth theme: dark cosmic look, scoped to body while logged out (covers the login page + its modals) ---------- */
+body.auth-theme{--bg:#0a0c12;--card:#12151d;--ink:#f3f5f9;--mut:#8891a6;--line:#242836;--pri:#2dd4bf;--pri-t:#062420;--acc:#7c5cff;--warn:#f0b95c}
+body.auth-theme .btn:hover{box-shadow:0 8px 20px -9px var(--pri)}
+
+/* ---------- SpaceLogin ---------- */
+.space-login{position:relative;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;background:#03060f;padding:40px 16px}
+.space-canvas{position:absolute;inset:0;z-index:0}
+.space-glow{position:absolute;left:50%;bottom:-260px;transform:translateX(-50%);width:160vw;max-width:1900px;height:520px;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse at 50% 100%,rgba(224,102,70,.9) 0%,rgba(199,81,58,.7) 20%,rgba(67,142,145,.45) 42%,rgba(20,48,70,.22) 60%,transparent 80%);filter:blur(40px)}
+.space-mascot{position:absolute;left:4%;top:50%;transform:translateY(-60%);z-index:2;display:none;transition:transform .3s var(--ease)}
+@media(min-width:980px){.space-mascot{display:block}}
+.mascot-float{animation:mascot-bob 7s ease-in-out infinite;transition:transform .3s var(--ease)}
+@keyframes mascot-bob{0%,100%{transform:translateY(-10px) rotate(-2deg)}50%{transform:translateY(12px) rotate(3deg)}}
+.mascot-icon{font-size:92px;filter:drop-shadow(0 18px 30px rgba(0,0,0,.85));display:block}
+.mascot-spark{position:absolute;top:6%;right:-6px;color:#ff4bb8;filter:drop-shadow(0 0 12px #ff4bb8);animation:spark-pulse 2.8s ease-in-out infinite}
+@keyframes spark-pulse{0%,100%{opacity:.65;transform:scale(.85)}50%{opacity:1;transform:scale(1.25)}}
+.space-card{position:relative;z-index:3;width:100%;max-width:400px;display:flex;flex-direction:column;align-items:center;animation:rise .7s var(--ease) both}
+@keyframes rise{from{opacity:0;transform:translateY(20px)}}
+.space-title{font-size:clamp(32px,6vw,42px);font-weight:800;margin-bottom:26px;text-align:center;color:#fff;font-family:"Bricolage Grotesque",sans-serif}
+.space-card form{width:100%;display:flex;flex-direction:column;gap:14px}
+.space-card label{font-size:15px;font-weight:600;color:#e5e7eb;margin:0 0 2px}
+.glass-field{position:relative;border-radius:14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);backdrop-filter:blur(10px) saturate(1.3);-webkit-backdrop-filter:blur(10px) saturate(1.3);
+  box-shadow:0 0 1px rgba(255,255,255,.1) inset,0 4px 16px rgba(0,0,0,.25);transition:border-color .2s,background .2s}
+.glass-field:focus-within{border-color:rgba(45,212,191,.55);background:rgba(255,255,255,.09)}
+.glass-field input{width:100%;height:52px;background:transparent;border:0;outline:0;color:#fff;padding:0 16px;font-size:15px;font-weight:500}
+.glass-field input::placeholder{color:rgba(255,255,255,.38)}
+.glass-field.pw-wrap input{padding-right:42px}
+.pw-wrap button{position:absolute;right:8px;top:50%;translate:0 -50%;background:none;border:0;color:rgba(255,255,255,.55);cursor:pointer;padding:7px;display:grid;place-items:center;border-radius:8px;transition:color .2s,background .2s}
+.pw-wrap button:hover{color:#fff;background:rgba(255,255,255,.08)}
+.space-row-between{display:flex;justify-content:space-between;align-items:center;font-size:13px;margin:2px 0}
+.space-remember{display:flex;align-items:center;gap:8px;cursor:pointer;color:rgba(255,255,255,.75);user-select:none}
+.space-remember:hover{color:#fff}
+.space-chk{width:16px;height:16px;border-radius:4px;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.05);display:grid;place-items:center;transition:background .15s,border-color .15s;flex-shrink:0}
+.space-chk.on{background:#e5e7eb;border-color:#e5e7eb;color:#000}
+.space-row-between a{color:rgba(255,255,255,.75);text-decoration:none}
+.space-row-between a:hover{color:#fff;text-decoration:underline}
+.space-submit{width:100%;height:48px;margin-top:4px;border-radius:12px;border:1px solid rgba(255,255,255,.1);background:#252831;color:#fff;font-weight:700;font-size:14px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:8px;transition:background .2s,border-color .2s,transform .15s;font-family:inherit}
+.space-submit:hover{background:#2d313c;border-color:rgba(255,255,255,.2)}
+.space-submit:active{transform:scale(.98)}
+.space-submit.success{background:#059669;border-color:transparent}
+.space-submit:disabled{cursor:default}
+.space-signup-line{text-align:center;font-size:13px;color:rgba(255,255,255,.55);margin-top:2px}
+.space-signup-line a{color:#fff;font-weight:700;text-decoration:none;cursor:pointer}
+.space-signup-line a:hover{text-decoration:underline}
+.space-divider{width:100%;height:1px;background:rgba(255,255,255,.08);margin:8px 0 2px}
+.social-row{display:flex;justify-content:center;gap:10px}
+.social-btn{width:40px;height:40px;border-radius:12px;background:rgba(36,39,48,.8);border:1px solid rgba(255,255,255,.1);display:grid;place-items:center;color:rgba(255,255,255,.7);cursor:pointer;transition:transform .2s,border-color .2s,background .2s,color .2s}
+.social-btn:hover{transform:translateY(-2px);background:rgba(46,50,62,1);border-color:rgba(255,255,255,.2);color:#fff}
+.space-extra{text-align:center;font-size:12.5px;color:rgba(255,255,255,.4);margin-top:22px;display:flex;flex-direction:column;gap:8px}
+.space-extra a{color:rgba(255,255,255,.55)}
+.space-extra a:hover{color:#fff}
+.space-demo-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:0}
+.space-chip{border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);border-radius:999px;padding:6px 12px;font-size:12px;cursor:pointer;color:rgba(255,255,255,.6);transition:border-color .2s,color .2s,transform .2s}
+.space-chip:hover{border-color:#2dd4bf;color:#2dd4bf;transform:translateY(-1px)}
+.spin{width:16px;height:16px;border:2px solid rgba(255,255,255,.45);border-top-color:#fff;border-radius:50%;display:inline-block;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.shake{animation:shake .4s}
+@keyframes shake{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+.field-err{color:#ff7d97;font-size:12px;min-height:16px;margin-top:-6px}
+input.err{border-color:#ff7d97!important}
+
+/* ---------- App shell ---------- */
+.app{display:grid;grid-template-columns:230px 1fr;min-height:100vh}
+aside{background:var(--side);color:#efedff;padding:18px 12px;display:flex;flex-direction:column;gap:4px;position:sticky;top:0;height:100vh;overflow-y:auto;border-right:1px solid var(--side-line)}
+aside .brand{font:800 21px "Bricolage Grotesque",sans-serif;padding:0 10px 14px;display:flex;align-items:center;gap:8px}
+aside .nav{background:none;border:0;color:#b3aed6;text-align:left;padding:9px 10px;border-radius:9px;cursor:pointer;transition:background .2s,color .2s,transform .2s}
+aside .nav.on{background:rgba(255,255,255,.14);color:#fff}aside .nav:hover{background:rgba(255,255,255,.09);color:#fff;transform:translateX(2px)}
+aside .who{margin-top:auto;font-size:13px;color:#b3aed6;padding:10px;display:flex;flex-direction:column;gap:10px}
+.who-id{display:flex;align-items:center;gap:10px}
+.who-id b{color:#fff;font-size:14px;font-weight:600}.who-id span{color:#b3aed6}
+.avatar{width:34px;height:34px;border-radius:50%;background:var(--pri);color:#fff;display:grid;place-items:center;font:700 14px "Bricolage Grotesque",sans-serif;flex-shrink:0}
+.logout-btn{width:100%;border-color:var(--side-line);color:#efedff}.logout-btn:hover{border-color:#efedff;background:rgba(255,255,255,.08)}
+main{padding:26px;min-width:0;animation:fade .4s var(--ease) both}
+@keyframes fade{from{opacity:0;transform:translateY(10px)}}
+.head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+.head h1{font-size:28px}.head p{color:var(--mut);margin-top:4px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px;opacity:0;animation:up .5s var(--ease) both}
+@keyframes up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:16px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}.form-grid .full{grid-column:1/-1}
+.tw{overflow-x:auto}table{width:100%;border-collapse:collapse;min-width:560px}
+th,td{text-align:left;padding:10px;border-bottom:1px solid var(--line);font-size:14px;vertical-align:middle}
+th{color:var(--mut);font-weight:500}td .btn{margin-right:4px}
+.tag{padding:3px 10px;border-radius:99px;font-size:12px;font-weight:700;display:inline-block}
+.tag.approved,.tag.Registered,.tag.Active{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ok)}
+.tag.pending{background:color-mix(in srgb,var(--warn) 20%,transparent);color:var(--warn)}
+.tag.rejected,.tag.Cancelled{background:color-mix(in srgb,var(--bad) 16%,transparent);color:var(--bad)}
+.tag.reschedule{background:color-mix(in srgb,var(--pri) 16%,transparent);color:var(--pri)}
+.stat{font:800 30px "Bricolage Grotesque",sans-serif}.mut{color:var(--mut);font-size:13px}
+.bar{display:grid;grid-template-columns:120px 1fr 46px;gap:8px;align-items:center;font-size:13px;margin:8px 0}
+.trk{height:11px;border-radius:6px;background:var(--line);overflow:hidden}.trk i{display:block;height:100%;width:0;border-radius:6px;background:linear-gradient(90deg,var(--pri),var(--acc));transition:width .9s var(--ease)}
+.item{padding:12px 0;border-bottom:1px solid var(--line);transition:opacity .3s,transform .35s var(--ease),max-height .35s var(--ease);max-height:220px;opacity:0;animation:up .45s var(--ease) both}
+.item:last-child{border:0}.item.out{opacity:0!important;transform:translateX(30px);max-height:0;padding:0;overflow:hidden;border-color:transparent}
+.note{background:color-mix(in srgb,var(--pri) 10%,transparent);border:1px solid color-mix(in srgb,var(--pri) 30%,transparent);border-radius:10px;padding:8px 12px;margin-top:6px;font-size:13px}
+.ev-card{border:1px solid var(--line);border-radius:14px;padding:16px;transition:transform .25s var(--ease),border-color .25s;opacity:0;animation:up .5s var(--ease) both}
+.ev-card:hover{transform:translateY(-4px);border-color:var(--pri)}
+.ov{position:fixed;inset:0;background:rgba(10,8,25,.55);display:grid;place-items:center;padding:16px;z-index:9;animation:fadein .2s}
+@keyframes fadein{from{opacity:0}}
+.modal{background:var(--card);border-radius:16px;padding:22px;width:100%;max-width:520px;max-height:90vh;overflow:auto;animation:pop .28s var(--ease)}
+@keyframes pop{from{opacity:0;transform:scale(.94) translateY(10px)}}
+.acts{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap}
+#toast{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:12px;z-index:10;opacity:0;pointer-events:none;transition:opacity .3s,transform .4s var(--ease)}
+#toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+@media(max-width:760px){.app{grid-template-columns:1fr}aside{position:static;height:auto;flex-direction:row;flex-wrap:wrap;overflow-y:visible}aside .who{width:100%;flex-direction:row;justify-content:space-between;margin-top:6px;border-top:1px solid var(--side-line);padding-top:12px}.who-id span{display:none}.logout-btn{width:auto;flex-shrink:0}aside .brand{width:100%}main{padding:16px}.form-grid{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+/* ---------- Team card animations ---------- */
+.team-card{transition:transform .3s var(--ease),border-color .3s}
+.team-card:hover{transform:translateY(-5px);border-color:var(--pri)}
+.click-hint{display:block;margin-top:12px;font-size:12px;color:var(--pri);opacity:0;transform:translateY(4px);transition:opacity .25s,transform .25s}
+.team-card:hover .click-hint,.team-card:focus-visible .click-hint{opacity:1;transform:none}
+.lvl-badge{position:absolute;top:12px;right:12px;background:var(--line);color:var(--mut);font-size:11px;font-weight:700;padding:3px 8px;border-radius:99px}
+.team-icon{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;margin:0 auto 12px;font-size:24px;box-shadow:0 10px 24px -12px rgba(80,50,200,.5)}
+.team-icon.spin-slow{animation:t-spin 4.5s linear infinite}
+@keyframes t-spin{to{transform:rotate(360deg)}}
+.team-icon.wave{animation:t-wave 1.8s ease-in-out infinite}
+@keyframes t-wave{0%,100%{transform:rotate(0)}20%{transform:rotate(-18deg)}40%{transform:rotate(14deg)}60%{transform:rotate(-10deg)}80%{transform:rotate(6deg)}}
+.team-icon.swing{animation:t-swing 2.4s ease-in-out infinite}
+@keyframes t-swing{0%,100%{transform:rotate(-22deg)}50%{transform:rotate(22deg)}}
+.team-icon.blink{animation:t-blink 2.2s ease-in-out infinite}
+@keyframes t-blink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.55;transform:scale(.9)}}
+.team-icon.typing{position:relative;animation:t-bob 1.6s ease-in-out infinite}
+@keyframes t-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.team-icon.typing::after{content:"";position:absolute;bottom:4px;right:6px;width:6px;height:6px;border-radius:50%;background:#fff;animation:t-cursor 1s steps(1) infinite}
+@keyframes t-cursor{50%{opacity:0}}
+.team-icon.glow{animation:t-glow 2s ease-in-out infinite}
+@keyframes t-glow{0%,100%{box-shadow:0 0 0 0 rgba(90,60,255,.55),0 10px 24px -12px rgba(80,50,200,.5);transform:scale(1)}50%{box-shadow:0 0 0 10px rgba(90,60,255,0),0 10px 24px -12px rgba(80,50,200,.5);transform:scale(1.06)}}
+</style>
+</head>
+<body>
+<div id="app"></div><div id="toast" role="status"></div>
+<script>
+const $=s=>document.querySelector(s);let uid=200;const nid=()=>++uid;
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const S={role:null,view:'',me:'Aisha Khan',
+uid:null,
+users:[{id:1,name:'Ravi Menon',email:'ravi@gatherly.io',pass:'admin123',title:'Senior Administrator',role:'Admin',phone:'+91 90000 11111',city:'Delhi',updates:'Yes'},{id:2,name:'Priya Shah',email:'priya@summitco.com',pass:'organizer123',title:'Organizer',role:'Organizer',phone:'+91 90000 22222',city:'Jaipur',updates:'Yes'},{id:3,name:'Aisha Khan',email:'aisha@mail.com',pass:'attendee123',title:'Attendee',role:'Attendee',phone:'+91 98765 43210',city:'Agra',updates:'Yes'}],
+events:[{id:1,title:'Product Design Summit',desc:'A day of talks on product craft.',date:'2026-10-18',time:'10:00',venue:'Jaipur Convention Hall',status:'approved',price:1500,qty:200,sold:132,note:''},
+{id:2,title:'Indie Music Night',desc:'Five local bands, one stage.',date:'2026-11-02',time:'19:00',venue:'Riverside Arena, Agra',status:'approved',price:800,qty:300,sold:214,note:''},
+{id:3,title:'Startup Founders Meetup',desc:'Networking and pitch practice.',date:'2026-12-05',time:'17:30',venue:'Hub 42, Delhi',status:'pending',price:0,qty:80,sold:0,note:''},
+{id:4,title:'Photography Walk',desc:'Golden hour around the old city.',date:'2026-10-10',time:'06:30',venue:'Mehtab Bagh',status:'reschedule',price:300,qty:40,sold:0,note:'The venue is booked that morning — could you move this to a different day, same time?'}],
+regs:[{id:1,eid:1,tix:1,date:'2026-09-20',status:'Registered'},{id:2,eid:2,tix:0,date:'2026-09-25',status:'Registered'}],
+updates:[{eid:1,msg:'Doors open at 9:30 AM. Bring your ticket confirmation.',date:'2026-09-26'}],
+log:[{t:'09:12',m:'Priya Shah created "Startup Founders Meetup"'},{t:'09:40',m:'Aisha Khan bought 1 ticket for Product Design Summit'}],
+set:{site:'Gatherly',cur:'₹',fee:5,approval:'Required'},prof:{name:'Aisha Khan',email:'aisha@mail.com',phone:'+91 98765 43210',city:'Agra',updates:'Yes'}};
+const cur=()=>S.set.cur;const evName=i=>(S.events.find(e=>e.id==i)||{}).title||'Deleted event';
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(t.h);t.h=setTimeout(()=>t.classList.remove('on'),2800)}
+function log(m){S.log.unshift({t:new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}),m});if(S.view==='activity')render()}
+const NAV={Admin:[['users','User management'],['approvals','Event approvals'],['settings','System settings'],['stats','Event statistics'],['activity','Activity monitor'],['profile','Profile']],
+Organizer:[['events','My events'],['tickets','Ticket management'],['comm','Attendee communication'],['stats','Event statistics'],['upcoming','Upcoming events'],['profile','Profile']],
+Attendee:[['upcoming','Upcoming events'],['browse','Browse & register'],['tickets','My tickets'],['updates','Event updates'],['history','Registration history'],['profile','Profile']]};
+const STLABEL={pending:'pending',approved:'approved',rejected:'rejected',reschedule:'reschedule requested'};
+function bars(rows,unit=''){const m=Math.max(...rows.map(r=>r[1]),1);return rows.map(r=>`<div class="bar"><span>${esc(r[0])}</span><div class=trk><i data-w="${r[1]/m*100}"></i></div><b>${r[1]}${unit}</b></div>`).join('')}
+const tbl=(h,r)=>`<div class="tw"><table><tr>${h.map(x=>`<th>${x}</th>`).join('')}</tr>${r||`<tr><td colspan="${h.length}" class="mut">Nothing here yet.</td></tr>`}</table></div>`;
+const tag=s=>`<span class="tag ${s}">${STLABEL[s]||s}</span>`;
+function modal(title,fields,cb,ok='Save'){const o=document.createElement('div');o.className='ov';
+o.innerHTML=`<form class="modal"><h2>${title}</h2><div class="form-grid">${fields.map(f=>`<label class="${f.full?'full':''}">${f.l}${f.t==='select'?`<select name="${f.k}">${f.o.map(x=>`<option ${x==f.v?'selected':''}>${x}</option>`).join('')}</select>`:f.t==='textarea'?`<textarea name="${f.k}" rows="3" ${f.r===0?'':'required'}>${esc(f.v||'')}</textarea>`:`<input name="${f.k}" type="${f.t||'text'}" value="${esc(f.v??'')}" ${f.r===0?'':'required'} ${f.t==='number'?'min="0"':''}>`}</label>`).join('')}</div><div class="acts"><button type="button" class="btn ghost" data-x>Cancel</button><button class="btn">${ok}</button></div></form>`;
+o.onclick=e=>{if(e.target===o||e.target.dataset.x!==undefined)o.remove()};
+o.querySelector('form').onsubmit=e=>{e.preventDefault();const d=Object.fromEntries(new FormData(e.target));if(cb(d)!==false)o.remove()};document.body.appendChild(o);o.querySelector('input,textarea,select').focus()}
+const evFields=(e={})=>[{k:'title',l:'Event name',v:e.title,full:1},{k:'desc',l:'Description',t:'textarea',v:e.desc,full:1},{k:'date',l:'Date',t:'date',v:e.date},{k:'time',l:'Time',t:'time',v:e.time},{k:'venue',l:'Venue',v:e.venue,full:1},{k:'price',l:'Ticket price ('+cur()+', 0 = free)',t:'number',v:e.price??0},{k:'qty',l:'Tickets available',t:'number',v:e.qty??100}];
+
+/* Staff title hierarchy: rank 1 = highest. All admin-tier titles use the Admin dashboard;
+   Organizer and Attendee keep their own dashboards. Only an existing Admin can grant an admin-tier title. */
+const TITLES=[
+ {t:'Senior Administrator',lvl:6,role:'Admin'},
+ {t:'Main Developer',lvl:5,role:'Admin'},
+ {t:'Database Developer',lvl:4,role:'Admin'},
+ {t:'Curator of the Project',lvl:3,role:'Admin'},
+ {t:'Community Manager',lvl:2,role:'Admin'},
+ {t:'Administrator',lvl:1,role:'Admin'},
+ {t:'Organizer',lvl:null,role:'Organizer'},
+ {t:'Attendee',lvl:null,role:'Attendee'}
+];
+const titleInfo=t=>TITLES.find(x=>x.t===t)||TITLES.find(x=>x.t==='Attendee');
+const roleOfTitle=t=>titleInfo(t).role;
+
+/* ---------- Login page ---------- */
+const TEAM=[
+ {role:'Administrator',lvl:1,desc:'Handles day-to-day user management, approvals and support.',icon:'⚙️',c:'linear-gradient(135deg,#8a5cff,#b08bff)',anim:'spin-slow',name:'Karan Verma',email:'admin@gatherly.io'},
+ {role:'Community Manager',lvl:2,desc:'Runs communication with organizers and attendees, and gathers feedback.',icon:'📣',c:'linear-gradient(135deg,#ff5c8a,#ff8fb3)',anim:'wave',name:'Meera Nair',email:'community@gatherly.io'},
+ {role:'Curator of the Project',lvl:3,desc:'Shapes the roadmap and keeps event content and quality on track.',icon:'🧭',c:'linear-gradient(135deg,#ff7a45,#ffb066)',anim:'swing',name:'Farhan Ali',email:'curator@gatherly.io'},
+ {role:'Database Developer',lvl:4,desc:'Designs and looks after the MySQL schema, queries and data integrity.',icon:'🗄️',c:'linear-gradient(135deg,#2fd0a1,#1d9d72)',anim:'blink',name:'Sana Iyer',email:'db@gatherly.io'},
+ {role:'Main Developer',lvl:5,desc:'Builds and maintains the core application and features.',icon:'💻',c:'linear-gradient(135deg,#5b3df5,#8a5cff)',anim:'typing',name:'Dev Kapoor',email:'dev@gatherly.io'},
+ {role:'Senior Administrator',lvl:6,desc:'Oversees platform policy, escalations and final event decisions.',icon:'🛡️',c:'linear-gradient(135deg,#4c5fff,#7b8cff)',anim:'glow',name:'Ravi Menon',email:'ravi@gatherly.io'}
+];
+function loginPage(){
+ return `<div class="space-login">
+  <canvas class="space-canvas" id="space-canvas"></canvas>
+  <div class="space-glow"></div>
+  <div class="space-mascot" id="space-mascot">
+    <div class="mascot-float">
+      <span class="mascot-icon">🎟️</span>
+      <svg class="mascot-spark" width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z"/></svg>
+    </div>
+  </div>
+  <div class="space-card">
+    <h1 class="space-title">Sign In</h1>
+    <form id="loginForm" novalidate>
+      <label for="li-email">Email</label>
+      <div class="glass-field"><input id="li-email" type="email" placeholder="name@example.com" autocomplete="username"></div>
+      <div class="field-err" id="err-email"></div>
+      <label for="li-pass">Password</label>
+      <div class="glass-field pw-wrap">
+        <input id="li-pass" type="password" placeholder="••••••••••••" autocomplete="current-password">
+        <button type="button" id="pw-toggle" aria-label="Show password">
+          <svg id="eye-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
+      <div class="field-err" id="err-pass"></div>
+      <div class="space-row-between">
+        <span class="space-remember" id="remember-row"><span class="space-chk" id="remember-chk"></span>Remember me</span>
+        <a href="#" id="forgot-link">Forgot password?</a>
+      </div>
+      <button type="submit" class="space-submit" id="li-submit"><span id="li-submit-label">Sign In</span></button>
+      <div class="space-signup-line">Don't have an account? <a href="#" id="go-signup">Sign Up</a></div>
+      <div class="space-divider"></div>
+      <div class="social-row">
+        <button type="button" class="social-btn" data-social="google" aria-label="Sign in with Google"><svg width="16" height="16" viewBox="0 0 24 24"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.9 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l5.7-5.7C34.6 6 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z" transform="scale(0.375)"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 15.9 18.9 13 24 13c3.1 0 5.8 1.1 8 3l5.7-5.7C34.6 6 29.6 4 24 4 16.3 4 9.7 8.3 6.3 14.7z" transform="scale(0.375)"/><path fill="#4CAF50" d="M24 44c5.5 0 10.4-1.9 14.3-5.1l-6.6-5.6C29.7 35.1 27 36 24 36c-5.3 0-9.7-3.1-11.3-7.5l-6.6 5.1C9.6 39.6 16.3 44 24 44z" transform="scale(0.375)"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.3-4.2 5.7l6.6 5.6C40.5 36.8 44 31 44 24c0-1.3-.1-2.7-.4-3.5z" transform="scale(0.375)"/></svg></button>
+        <button type="button" class="social-btn" data-social="github" aria-label="Sign in with GitHub"><svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg></button>
+        <button type="button" class="social-btn" data-social="facebook" aria-label="Sign in with Facebook"><svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg></button>
+        <button type="button" class="social-btn" data-social="windows" aria-label="Sign in with Windows"><svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M0 3.449L9.75 2.1v9.451H0V3.449zm10.75-1.551L24 0v11.551h-13.25V1.898zM0 12.449h9.75v9.451L0 20.551v-8.102zm10.75 0H24V24l-13.25-1.898v-9.653z"/></svg></button>
+        <button type="button" class="social-btn" data-social="passkey" aria-label="Sign in with Passkey"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(-45deg)"><circle cx="7.5" cy="15.5" r="5.5"/><path d="M21 2l-9.6 9.6"/><path d="M15.5 7.5l3 3L22 7l-3-3"/></svg></button>
+      </div>
+    </form>
+    <div class="space-extra">
+      <div class="space-demo-row">
+        <button class="space-chip" data-demo="ravi@gatherly.io|admin123">Admin demo</button>
+        <button class="space-chip" data-demo="priya@summitco.com|organizer123">Organizer demo</button>
+        <button class="space-chip" data-demo="aisha@mail.com|attendee123">Attendee demo</button>
+      </div>
+      <div><a href="#team">Meet the team behind ${esc(S.set.site)}</a> &nbsp;&middot;&nbsp; <a href="#" id="go-reset">Reset demo data</a></div>
+    </div>
+  </div>
+ </div>
+ <section id="team" style="padding:60px max(20px,5vw) 70px;max-width:1080px;margin:0 auto">
+   <h2 style="font-size:clamp(26px,3.6vw,38px);text-align:center">The team behind ${esc(S.set.site)}</h2>
+   <p class="mut" style="text-align:center;max-width:44em;margin:10px auto 30px">The people who build, run and grow the platform.</p>
+   <div class="grid">
+     ${TEAM.map(t=>`<div class="card team-card" style="text-align:center;position:relative;cursor:pointer" role="button" tabindex="0" data-a="teamInfo" data-i="${esc(t.role)}"><span class="lvl-badge">Lv ${t.lvl}</span><div class="team-icon ${t.anim}" style="background:${t.c}">${t.icon}</div><h3 style="font-size:17px">${esc(t.role)}</h3><p class="mut" style="margin:6px 0 0">${esc(t.desc)}</p><span class="click-hint">Click to contact →</span></div>`).join('')}
+   </div>
+ </section>
+ <section id="about" style="padding:10px max(20px,5vw) 80px;max-width:820px;margin:0 auto;text-align:center">
+   <h2 style="font-size:clamp(24px,3.2vw,32px)">About ${esc(S.set.site)}</h2>
+   <p class="mut" style="margin-top:14px">${esc(S.set.site)} is an online event management system. Organizers create and manage events and tickets, attendees browse, register and pay, and admins review submissions, keep the platform's settings in order, and can ask an organizer to reschedule instead of an outright rejection.</p>
+   <p class="mut" style="margin-top:10px">Behind the scenes it runs on a <b style="color:var(--ink)">Java backend</b> talking to a <b style="color:var(--ink)">MySQL database</b> — the same data model this demo page is designed around. Staff accounts follow a six-level title hierarchy, from Administrator up to Senior Administrator, shown in the team section above.</p>
+   <p class="mut" style="margin-top:10px">This page itself is a front-end preview: sample data only, nothing saved between visits.</p>
+   <p class="mut" style="margin-top:18px;font-size:12.5px">© 2026 ${esc(S.set.site)} · Demo project</p>
+ </section>`;
+}
+const EYE_OPEN='<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+const EYE_OFF='<path d="M17.94 17.94A10.94 10.94 0 0112 20c-7 0-11-8-11-8a18.6 18.6 0 015.06-5.94M9.9 4.24A10.9 10.9 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
+function wireLogin(){
+ $('#pw-toggle').onclick=()=>{
+  const p=$('#li-pass');const show=p.type==='password';p.type=show?'text':'password';
+  $('#eye-icon').innerHTML=show?EYE_OFF:EYE_OPEN;
+  $('#pw-toggle').setAttribute('aria-label',show?'Hide password':'Show password');
+ };
+ document.querySelectorAll('[data-demo]').forEach(c=>c.onclick=()=>{const [e,p]=c.dataset.demo.split('|');$('#li-email').value=e;$('#li-pass').value=p;doLogin()});
+ $('#loginForm').onsubmit=e=>{e.preventDefault();doLogin()};
+ $('#go-signup').onclick=e=>{e.preventDefault();signupModal()};
+ $('#go-reset').onclick=e=>{e.preventDefault();resetDemoData()};
+ $('#forgot-link').onclick=e=>{e.preventDefault();toast('Password reset isn\u2019t wired up in this demo \u2014 try a demo account below instead.')};
+ $('#remember-row').onclick=()=>$('#remember-chk').classList.toggle('on');
+ try{
+  const remembered=localStorage.getItem(REMEMBER_KEY);
+  if(remembered){$('#li-email').value=remembered;$('#remember-chk').classList.add('on');$('#li-pass').focus()}
+ }catch(e){}
+ document.querySelectorAll('[data-social]').forEach(b=>b.onclick=()=>{
+  const p=b.dataset.social;
+  toast(p==='google' ? 'Google sign-in isn\u2019t wired up in this demo \u2014 use email & password below, or a demo chip.' : (p[0].toUpperCase()+p.slice(1)+' sign-in isn\u2019t wired up in this demo.'));
+ });
+ initSpaceCanvas();
+ initMascotParallax();
+}
+const EMAIL_RE=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const REMEMBER_KEY='gatherly_remember_email';
+function doLogin(){
+ const email=$('#li-email').value.trim(),pass=$('#li-pass').value;
+ let ok=true;
+ $('#err-email').textContent='';$('#err-pass').textContent='';$('#li-email').classList.remove('err');$('#li-pass').classList.remove('err');
+ if(!email){$('#err-email').textContent='Enter your email';$('#li-email').classList.add('err');ok=false}
+ else if(!EMAIL_RE.test(email)){$('#err-email').textContent='That doesn\u2019t look like a valid email';$('#li-email').classList.add('err');ok=false}
+ if(!pass){$('#err-pass').textContent='Enter your password';$('#li-pass').classList.add('err');ok=false}
+ if(!ok)return;
+ const u=S.users.find(u=>u.email.toLowerCase()===email.toLowerCase());
+ const btn=$('#li-submit'),label=$('#li-submit-label');
+ btn.disabled=true;label.innerHTML='<span class="spin"></span>Signing in\u2026';
+ setTimeout(()=>{
+  if(!u||u.pass!==pass){
+   btn.disabled=false;label.textContent='Sign In';
+   $('#err-pass').textContent='That email and password don\u2019t match';$('#li-pass').classList.add('err');
+   $('.space-card').classList.add('shake');setTimeout(()=>$('.space-card').classList.remove('shake'),400);
+   return;
+  }
+  try{
+   if($('#remember-chk').classList.contains('on'))localStorage.setItem(REMEMBER_KEY,email);
+   else localStorage.removeItem(REMEMBER_KEY);
+  }catch(e){}
+  btn.classList.add('success');label.textContent='Welcome Back!';
+  setTimeout(()=>{S.role=u.role;S.me=u.name;S.uid=u.id;S.view='';render()},300);
+ },500);
+}
+
+let spaceCanvasRAF=null,spaceCanvasResize=null,spaceCanvasMove=null;
+function initSpaceCanvas(){
+ const canvas=$('#space-canvas');if(!canvas)return;
+ const ctx=canvas.getContext('2d');if(!ctx)return;
+ // Clean up anything left over from a previous visit to this page (e.g. after logging out and back in),
+ // so listeners and animation loops don't pile up over a long session.
+ if(spaceCanvasRAF)cancelAnimationFrame(spaceCanvasRAF);
+ if(spaceCanvasResize)removeEventListener('resize',spaceCanvasResize);
+ if(spaceCanvasMove)removeEventListener('mousemove',spaceCanvasMove);
+ const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+ let w=canvas.width=innerWidth,h=canvas.height=innerHeight;
+ let stars=[],shooting=[],tick=0,mx=0,my=0,cx=0,cy=0;
+ const colors=['#ffffff','#e0f2fe','#fdf4ff','#fbcfe8','#bae6fd'];
+ function initStars(){
+  stars=[];const count=Math.floor((w*h)/3200);
+  for(let i=0;i<count;i++){
+   const sparkle=Math.random()<0.08;
+   stars.push({x:Math.random()*w,y:Math.random()*h,size:sparkle?Math.random()*1.8+1.2:Math.random()*1.3+0.5,
+    base:sparkle?0.6+Math.random()*0.4:0.2+Math.random()*0.7,speed:0.008+Math.random()*0.02,
+    color:colors[Math.floor(Math.random()*colors.length)],sparkle});
+  }
+ }
+ initStars();
+ function resize(){w=canvas.width=innerWidth;h=canvas.height=innerHeight;initStars()}
+ function onMove(e){mx=(e.clientX-w/2)*0.03;my=(e.clientY-h/2)*0.03}
+ spaceCanvasResize=resize;spaceCanvasMove=onMove;
+ addEventListener('resize',resize);
+ if(!reduced)addEventListener('mousemove',onMove);
+ function maybeShoot(){
+  if(!reduced && Math.random()<0.012 && shooting.length<2){
+   shooting.push({x:Math.random()*w,y:Math.random()*h*0.5,len:Math.random()*80+40,speed:Math.random()*9+7,
+    angle:Math.PI/4+(Math.random()*0.2-0.1),life:1});
+  }
+ }
+ function render(){
+  // If the canvas has been removed from the page (e.g. login succeeded and the dashboard replaced it),
+  // stop the loop instead of continuing to draw to an invisible, detached element forever.
+  if(!canvas.isConnected){cancelAnimationFrame(spaceCanvasRAF);spaceCanvasRAF=null;return}
+  tick++;cx+=(mx-cx)*0.05;cy+=(my-cy)*0.05;
+  ctx.clearRect(0,0,w,h);
+  for(let i=0;i<stars.length;i++){
+   const s=stars[i];const op=Math.max(0.1,Math.min(1,s.base+Math.sin(tick*s.speed+i)*0.35));
+   const px=s.x+cx*(s.size*0.8),py=s.y+cy*(s.size*0.8);
+   ctx.fillStyle=s.color;ctx.globalAlpha=op;
+   if(s.sparkle){
+    const z=s.size*2.2;
+    ctx.beginPath();
+    ctx.moveTo(px,py-z);ctx.lineTo(px+z*0.25,py-z*0.25);ctx.lineTo(px+z,py);ctx.lineTo(px+z*0.25,py+z*0.25);
+    ctx.lineTo(px,py+z);ctx.lineTo(px-z*0.25,py+z*0.25);ctx.lineTo(px-z,py);ctx.lineTo(px-z*0.25,py-z*0.25);
+    ctx.closePath();ctx.fill();
+    ctx.beginPath();ctx.arc(px,py,s.size*0.8,0,Math.PI*2);ctx.fill();
+   } else {ctx.beginPath();ctx.arc(px,py,s.size,0,Math.PI*2);ctx.fill()}
+  }
+  maybeShoot();
+  for(let i=shooting.length-1;i>=0;i--){
+   const ss=shooting[i];ss.x+=Math.cos(ss.angle)*ss.speed;ss.y+=Math.sin(ss.angle)*ss.speed;ss.life-=0.015;
+   if(ss.life<=0||ss.x>w+100||ss.y>h+100){shooting.splice(i,1);continue}
+   ctx.strokeStyle=`rgba(255,255,255,${ss.life*0.8})`;ctx.lineWidth=1.4;
+   ctx.beginPath();ctx.moveTo(ss.x,ss.y);ctx.lineTo(ss.x-Math.cos(ss.angle)*ss.len,ss.y-Math.sin(ss.angle)*ss.len);ctx.stroke();
+  }
+  ctx.globalAlpha=1;
+  spaceCanvasRAF=requestAnimationFrame(render);
+ }
+ render();
+}
+let mascotMoveHandler=null;
+function initMascotParallax(){
+ const m=$('#space-mascot');if(!m)return;
+ if(mascotMoveHandler)removeEventListener('mousemove',mascotMoveHandler);
+ const onMove=e=>{
+  if(!m.isConnected){removeEventListener('mousemove',onMove);if(mascotMoveHandler===onMove)mascotMoveHandler=null;return}
+  const x=(e.clientX/innerWidth-0.5)*20,y=(e.clientY/innerHeight-0.5)*20;
+  m.style.transform=`translateY(-60%) translate(${x*1.5}px, ${y*1.5}px)`;
+ };
+ mascotMoveHandler=onMove;
+ if(!matchMedia('(prefers-reduced-motion: reduce)').matches) addEventListener('mousemove',onMove);
+}
+
+/* ---------- Sign up (create a profile) ---------- */
+function signupModal(){
+ modal('Create your account',[
+  {k:'name',l:'Full name'},
+  {k:'email',l:'Email',t:'email'},
+  {k:'pass',l:'Password (min 6 characters)',t:'password'},
+  {k:'role',l:'I am a…',t:'select',o:['Attendee','Organizer'],v:'Attendee'}
+ ],d=>{
+  if(S.users.some(u=>u.email.toLowerCase()===d.email.toLowerCase())){toast('An account with that email already exists');return false}
+  if(d.pass.length<6){toast('Password should be at least 6 characters');return false}
+  const u={id:nid(),name:d.name,email:d.email,pass:d.pass,title:d.role,role:d.role,phone:'',city:'',updates:'Yes'};
+  S.users.push(u);log(u.name+' created an account ('+u.role+')');toast('Account created — you’re signed in');
+  S.role=u.role;S.me=u.name;S.uid=u.id;S.view='';render();
+ },'Create account & sign in');
+}
+
+const evFields2=evFields;
+const V={
+Admin:{
+users:()=>`<div class="head"><div><h1>User management</h1><p>Add, edit or remove accounts. Admin-tier titles are ranked — level 6 is highest.</p></div><button class="btn" data-a="addUser">Add user</button></div><div class="card">${tbl(['Name','Email','Title','Dashboard',''],S.users.map(u=>{const ti=titleInfo(u.title||u.role);return`<tr><td>${esc(u.name)}</td><td>${esc(u.email)}</td><td>${esc(u.title||u.role)}${ti.lvl?` <span class="mut">(level ${ti.lvl})</span>`:''}</td><td>${u.role}</td><td><button class="btn ghost sm" data-a="editUser" data-i="${u.id}">Edit</button><button class="btn bad sm" data-a="delUser" data-i="${u.id}">Delete</button></td></tr>`}).join(''))}</div>`,
+approvals:()=>`<div class="head"><div><h1>Event approvals</h1><p>Approve, reject, or ask the organizer to reschedule.</p></div></div><div class="card">${S.events.map(e=>`<div class="item" id="ev${e.id}"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><div><b>${esc(e.title)}</b><br><span class="mut">${e.date} at ${e.time} · ${esc(e.venue)} · ${e.price?cur()+e.price:'Free'}</span></div>${tag(e.status)}</div>${e.note?`<div class="note">Note to organizer: ${esc(e.note)}</div>`:''}<div style="margin-top:10px">${e.status==='pending'||e.status==='reschedule'?`<button class="btn sm" data-a="approve" data-i="${e.id}">Approve</button><button class="btn bad sm" data-a="reject" data-i="${e.id}">Not approved</button><button class="btn warn sm" data-a="reschedule" data-i="${e.id}">Ask to reschedule</button>`:`<span class="mut">Reviewed — no action needed.</span>`}</div></div>`).join('')}</div>`,
+settings:()=>`<div class="head"><h1>System settings</h1></div><form class="card" data-f="settings" style="max-width:520px"><label>Site name<input name="site" value="${esc(S.set.site)}" required></label><label>Currency symbol<input name="cur" value="${esc(S.set.cur)}" required></label><label>Platform fee (%)<input name="fee" type="number" min="0" max="50" value="${S.set.fee}" required></label><label>Event approval<select name="approval"><option ${S.set.approval=='Required'?'selected':''}>Required</option><option ${S.set.approval=='Automatic'?'selected':''}>Automatic</option></select></label><div class="acts"><button class="btn">Save settings</button></div></form>`,
+stats:()=>statsView(S.events.filter(e=>e.status==='approved'),true),
+activity:()=>`<div class="head"><h1>Activity monitor</h1><span class="mut">Live – updates as things happen</span></div><div class="card">${S.log.map(l=>`<div class="item"><span class="mut">${l.t}</span> &nbsp; ${esc(l.m)}</div>`).join('')}</div>`},
+Organizer:{
+events:()=>`<div class="head"><div><h1>My events</h1><p>Fill in the event details, then send it for approval.</p></div><button class="btn" data-a="addEvent">Create event</button></div><div class="card">${S.events.map(e=>`<div class="item"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><div><b>${esc(e.title)}</b><br><span class="mut">${e.date} at ${e.time} · ${esc(e.venue)}</span></div>${tag(e.status)}</div>${e.note?`<div class="note">Admin note: ${esc(e.note)}${e.status==='reschedule'?' — update the date/time below and it will be resubmitted for approval.':''}</div>`:''}<div style="margin-top:10px"><button class="btn ghost sm" data-a="editEvent" data-i="${e.id}">${e.status==='reschedule'?'Reschedule & resubmit':'Edit'}</button><button class="btn bad sm" data-a="delEvent" data-i="${e.id}">Delete</button></div></div>`).join('')}</div>`,
+tickets:()=>`<div class="head"><h1>Ticket management</h1></div><div class="card">${tbl(['Event','Price','Quantity','Sold','Revenue',''],S.events.map(e=>`<tr><td>${esc(e.title)}</td><td>${e.price?cur()+e.price:'Free'}</td><td>${e.qty}</td><td>${e.sold}</td><td>${cur()}${e.sold*e.price}</td><td><button class="btn ghost sm" data-a="editTix" data-i="${e.id}">Update tickets</button></td></tr>`).join(''))}</div>`,
+comm:()=>`<div class="head"><h1>Attendee communication</h1></div><form class="card" data-f="msg" style="max-width:560px"><label>Event<select name="eid">${S.events.filter(e=>e.status==='approved').map(e=>`<option value="${e.id}">${esc(e.title)}</option>`).join('')}</select></label><label>Message<textarea name="msg" rows="5" required placeholder="Share a schedule change, reminder or welcome note"></textarea></label><div class="acts"><button class="btn">Send message</button></div></form>`,
+stats:()=>statsView(S.events,false),
+upcoming:()=>upcomingView()},
+Attendee:{
+upcoming:()=>upcomingView(true),
+browse:()=>`<div class="head"><h1>Browse & register</h1></div><div class="grid">${S.events.filter(e=>e.status==='approved').map(e=>{const r=S.regs.find(r=>r.eid==e.id&&r.status==='Registered');return`<div class="ev-card"><h3>${esc(e.title)}</h3><p class="mut">${esc(e.desc)}</p><p>${e.date} at ${e.time}<br>${esc(e.venue)}</p><p><b>${e.price?cur()+e.price:'Free'}</b> <span class="mut">· ${e.qty-e.sold} left</span></p>${r?tag('Registered')+' ':`<button class="btn ghost sm" data-a="register" data-i="${e.id}">Register</button> `}<button class="btn sm" data-a="buy" data-i="${e.id}">Buy tickets</button></div>`}).join('')}</div>`,
+tickets:()=>`<div class="head"><h1>My tickets</h1></div><div class="card">${tbl(['Event','Date','Tickets','Total paid'],S.regs.filter(r=>r.tix>0).map(r=>{const e=S.events.find(e=>e.id==r.eid)||{};return`<tr><td>${esc(e.title)}</td><td>${e.date}</td><td>${r.tix}</td><td>${cur()}${r.tix*e.price}</td></tr>`}).join(''))}</div>`,
+updates:()=>{const me=curUser();const ids=S.regs.filter(r=>r.status==='Registered').map(r=>r.eid);return`<div class="head"><h1>Event updates</h1></div><div class="card">${me.updates==='No'?'<p class="mut">You have turned updates off. Turn them on in your profile.</p>':S.updates.filter(u=>ids.includes(u.eid)).map(u=>`<div class="item"><b>${esc(evName(u.eid))}</b> <span class="mut">${u.date}</span><br>${esc(u.msg)}</div>`).join('')||'<p class="mut">No updates yet.</p>'}</div>`},
+history:()=>`<div class="head"><h1>Registration history</h1></div><div class="card">${tbl(['Event','Registered on','Status'],S.regs.map(r=>`<tr><td>${esc(evName(r.eid))}</td><td>${r.date}</td><td>${tag(r.status)}</td></tr>`).join(''))}</div>`}};
+V.Admin.profile=V.Organizer.profile=V.Attendee.profile=profileView;
+function curUser(){return S.users.find(u=>u.id===S.uid)||S.users.find(u=>u.name===S.me)||{}}
+function profileView(){const me=curUser();
+ return `<div class="head"><div><h1>Profile</h1><p>Update your details and how we reach you.</p></div></div>
+ <div class="card" style="max-width:520px;display:flex;align-items:center;gap:12px"><span class="avatar" style="background:var(--pri)">${esc((me.name||'?').slice(0,1))}</span><div><b>${esc(me.title||me.role)}</b><br><span class="mut">Title changes are made by an Administrator in User management.</span></div></div>
+ <form class="card" data-f="prof" style="max-width:520px">
+  <label>Full name<input name="name" value="${esc(me.name)}" required></label>
+  <label>Email<input name="email" type="email" value="${esc(me.email)}" required></label>
+  <label>Phone<input name="phone" value="${esc(me.phone||'')}"></label>
+  <label>City<input name="city" value="${esc(me.city||'')}"></label>
+  <label>Send me event updates<select name="updates"><option ${me.updates=='Yes'?'selected':''}>Yes</option><option ${me.updates=='No'?'selected':''}>No</option></select></label>
+  <div class="acts"><button class="btn">Save profile</button></div>
+ </form>
+ <div class="card" style="max-width:520px"><h3>Password</h3><p class="mut" style="margin-bottom:10px">Change the password you sign in with.</p>
+  <form data-f="pw"><label>Current password<input name="cur" type="password" required></label><label>New password (min 6 characters)<input name="new" type="password" required minlength="6"></label><div class="acts"><button class="btn ghost">Update password</button></div></form>
+ </div>`;
+}
+function statsView(evs,admin){const sold=evs.reduce((a,e)=>a+e.sold,0),rev=evs.reduce((a,e)=>a+e.sold*e.price,0);
+return`<div class="head"><h1>Event statistics</h1></div><div class="grid"><div class="card"><div class="stat">${evs.length}</div><span class="mut">Live events</span></div><div class="card"><div class="stat">${sold}</div><span class="mut">Tickets sold</span></div><div class="card"><div class="stat">${cur()}${rev.toLocaleString()}</div><span class="mut">Ticket revenue${admin?` (platform fee ${S.set.fee}%: ${cur()}${Math.round(rev*S.set.fee/100).toLocaleString()})`:''}</span></div></div>
+<div class="grid"><div class="card"><h3>Registrations by event</h3>${bars(evs.map(e=>[e.title.split(' ').slice(0,2).join(' '),e.sold]))}</div><div class="card"><h3>Ticket sales (${cur()})</h3>${bars(evs.map(e=>[e.title.split(' ').slice(0,2).join(' '),e.sold*e.price]))}</div>${admin?'':`<div class="card"><h3>Attendee age groups</h3>${bars([['Under 20',12],['20–29',46],['30–39',28],['40+',14]],'%')}</div>`}</div>
+<div class="card">${tbl(['Event','Capacity','Sold','Filled'],evs.map(e=>`<tr><td>${esc(e.title)}</td><td>${e.qty}</td><td>${e.sold}</td><td>${Math.round(e.sold/e.qty*100)}%</td></tr>`).join(''))}</div>`}
+function upcomingView(att){let evs=S.events.filter(e=>e.status==='approved');if(att)evs=evs.filter(e=>S.regs.some(r=>r.eid==e.id&&r.status==='Registered'));evs.sort((a,b)=>a.date.localeCompare(b.date));
+return`<div class="head"><h1>Upcoming events</h1></div><div class="card">${evs.map(e=>`<div class="item"><b>${esc(e.title)}</b><br><span class="mut">${e.date} at ${e.time} · ${esc(e.venue)}${att?'':` · Ticket sales close ${e.date}`}</span></div>`).join('')||'<p class="mut">No upcoming events. Browse events to register for one.</p>'}</div>`}
+
+function stagger(root){
+ root.querySelectorAll('.card,.ev-card,.item').forEach((el,i)=>{el.style.animationDelay=(Math.min(i,8)*45)+'ms'});
+ root.querySelectorAll('.trk i[data-w]').forEach((el,i)=>{setTimeout(()=>el.style.width=el.dataset.w+'%',120+i*60)});
+}
+function render(){const a=$('#app');
+document.body.classList.toggle('auth-theme',!S.role);
+if(!S.role){a.innerHTML=loginPage();wireLogin();if(!$('#li-email').value)$('#li-email').focus();return}
+if(!V[S.role][S.view])S.view=NAV[S.role][0][0];
+a.innerHTML=`<div class="app"><aside><div class="brand">🎟️ ${esc(S.set.site)}</div>${NAV[S.role].map(n=>`<button class="nav ${n[0]===S.view?'on':''}" data-a="nav" data-i="${n[0]}">${n[1]}</button>`).join('')}<div class="who"><div class="who-id"><span class="avatar">${esc(S.me.slice(0,1))}</span><div><b>${esc(S.me)}</b><br><span>${esc(curUser().title||S.role)}</span></div></div><button class="btn ghost sm logout-btn" data-a="logout">⏻ Log out</button></div></aside><main>${V[S.role][S.view]()}</main></div>`;
+stagger(a.querySelector('main'));
+saveState();
+}
+const A={logout:()=>{S.role=null;render()},nav:v=>{S.view=v;render()},
+teamInfo:role=>{
+ const t=TEAM.find(x=>x.role===role);const person=S.users.find(u=>u.title===role);
+ const o=document.createElement('div');o.className='ov';
+ o.innerHTML=`<div class="modal" style="text-align:center;max-width:380px">
+   <div class="team-icon ${t.anim}" style="background:${t.c};margin:0 auto 14px">${t.icon}</div>
+   <h2 style="font-size:20px">${esc(t.role)}</h2><p class="mut" style="margin:4px 0 16px">Level ${t.lvl} · ${esc(t.desc)}</p>
+   ${person?`<div class="note" style="text-align:left"><b style="display:block;color:var(--ink);font-size:15px">${esc(person.name)}</b><a href="mailto:${esc(person.email)}" style="color:var(--pri)">${esc(person.email)}</a></div>
+     <div class="acts" style="justify-content:center;margin-top:16px"><a class="btn" href="mailto:${esc(person.email)}">✉️ Email ${esc(person.name.split(' ')[0])}</a></div>`
+     :`<div class="note" style="text-align:left">This position is currently open.<br>Reach the team at <a href="mailto:team@gatherly.io" style="color:var(--pri)">team@gatherly.io</a></div>
+     <div class="acts" style="justify-content:center;margin-top:16px"><a class="btn ghost" href="mailto:team@gatherly.io">✉️ Contact the team</a></div>`}
+   <button type="button" class="btn ghost sm" data-x style="margin-top:14px;width:100%">Close</button>
+ </div>`;
+ o.onclick=e=>{if(e.target===o||e.target.dataset.x!==undefined)o.remove()};
+ document.body.appendChild(o);
+},
+addUser:()=>modal('Add user',[{k:'name',l:'Name'},{k:'email',l:'Email',t:'email'},{k:'title',l:'Title',t:'select',o:TITLES.map(x=>x.t+(x.lvl?' (level '+x.lvl+')':'')),v:'Attendee'}],d=>{const t=d.title.replace(/\s*\(level \d+\)$/,'');S.users.push({id:nid(),pass:'demo123',name:d.name,email:d.email,title:t,role:roleOfTitle(t),phone:'',city:'',updates:'Yes'});log('User '+d.name+' created as '+t);toast('User created');render()}),
+editUser:i=>{const u=S.users.find(u=>u.id==i);modal('Edit user',[{k:'name',l:'Name',v:u.name},{k:'email',l:'Email',t:'email',v:u.email},{k:'title',l:'Title',t:'select',o:TITLES.map(x=>x.t+(x.lvl?' (level '+x.lvl+')':'')),v:(u.title||u.role)+(titleInfo(u.title||u.role).lvl?' (level '+titleInfo(u.title||u.role).lvl+')':'')}],d=>{const t=d.title.replace(/\s*\(level \d+\)$/,'');u.name=d.name;u.email=d.email;u.title=t;u.role=roleOfTitle(t);log('User '+u.name+' updated to '+t);toast('User updated');render()})},
+delUser:i=>{const u=S.users.find(u=>u.id==i);if(confirm('Delete '+u.name+'?')){S.users=S.users.filter(x=>x.id!=i);log('User '+u.name+' deleted');toast('User deleted');render()}},
+approve:i=>{const e=S.events.find(e=>e.id==i);e.status='approved';e.note='';log('Admin approved "'+e.title+'"');toast('Event approved');fadeThenRender('ev'+i)},
+reject:i=>{const e=S.events.find(e=>e.id==i);modal('Reason for not approving "'+e.title+'"',[{k:'note',l:'Note to organizer (optional)',t:'textarea',r:0,full:1}],d=>{e.status='rejected';e.note=d.note||'';log('Admin rejected "'+e.title+'"');toast('Event marked not approved');render()},'Confirm')},
+reschedule:i=>{const e=S.events.find(e=>e.id==i);modal('Ask "'+e.title+'" to reschedule',[{k:'note',l:'What should change? (reason / suggested date)',t:'textarea',full:1}],d=>{e.status='reschedule';e.note=d.note;log('Admin asked to reschedule "'+e.title+'"');toast('Reschedule request sent to organizer');render()},'Send request')},
+addEvent:()=>modal('Create event',evFields2(),d=>{S.events.push({id:nid(),title:d.title,desc:d.desc,date:d.date,time:d.time,venue:d.venue,price:+d.price||0,qty:+d.qty||100,sold:0,note:'',status:S.set.approval==='Automatic'?'approved':'pending'});log('New event "'+d.title+'" created');toast('Event created and sent for approval');render()},'Create event'),
+editEvent:i=>{const e=S.events.find(e=>e.id==i);const wasResched=e.status==='reschedule';modal(wasResched?'Reschedule "'+e.title+'"':'Edit event',evFields2(e),d=>{Object.assign(e,{title:d.title,desc:d.desc,date:d.date,time:d.time,venue:d.venue,price:+d.price||0,qty:+d.qty||e.qty});if(wasResched){e.status='pending';e.note='';log('Organizer rescheduled "'+e.title+'" and resubmitted for approval');toast('New date sent for approval')}else{toast('Event updated')}render()})},
+delEvent:i=>{const e=S.events.find(e=>e.id==i);if(confirm('Delete '+e.title+'?')){S.events=S.events.filter(x=>x.id!=i);log('Event "'+e.title+'" deleted');toast('Event deleted');render()}},
+editTix:i=>{const e=S.events.find(e=>e.id==i);modal('Update tickets',[{k:'price',l:'Price ('+cur()+')',t:'number',v:e.price},{k:'qty',l:'Quantity',t:'number',v:e.qty}],d=>{if(+d.qty<e.sold){toast('Quantity can’t be below tickets already sold ('+e.sold+')');return false}e.price=+d.price;e.qty=+d.qty;toast('Tickets updated');render()})},
+register:i=>{S.regs.push({id:nid(),eid:+i,tix:0,date:new Date().toISOString().slice(0,10),status:'Registered'});log(S.me+' registered for "'+evName(i)+'"');toast('You’re registered');render()},
+buy:i=>{const e=S.events.find(e=>e.id==i);modal('Buy tickets – '+esc(e.title),[{k:'n',l:'Tickets (price '+(e.price?cur()+e.price:'free')+' each)',t:'number',v:1},{k:'card',l:'Card number',r:e.price?1:0,v:''},{k:'exp',l:'Expiry (MM/YY)',r:e.price?1:0,v:''}],d=>{const n=+d.n;if(n<1||n>e.qty-e.sold){toast('Only '+(e.qty-e.sold)+' tickets left');return false}
+if(e.price&&d.card.replace(/\D/g,'').length<12){toast('Enter a valid card number');return false}
+e.sold+=n;let r=S.regs.find(r=>r.eid==e.id&&r.status==='Registered');if(!r){r={id:nid(),eid:e.id,tix:0,date:new Date().toISOString().slice(0,10),status:'Registered'};S.regs.push(r)}r.tix+=n;log(S.me+' bought '+n+' ticket(s) for "'+e.title+'"');toast('Purchase confirmed – '+n+' ticket(s), '+cur()+n*e.price);render()},'Pay & confirm')}};
+function fadeThenRender(elId){const el=document.getElementById(elId);if(!el){render();return}el.classList.add('out');setTimeout(render,380)}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(b){e.preventDefault();A[b.dataset.a](b.dataset.i)}});
+document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-a]')){e.preventDefault();A[e.target.dataset.a](e.target.dataset.i)}});
+document.addEventListener('submit',e=>{const f=e.target.dataset.f;if(!f)return;e.preventDefault();const d=Object.fromEntries(new FormData(e.target));
+if(f==='settings'){Object.assign(S.set,d,{fee:+d.fee});log('System settings updated');toast('Settings updated');render()}
+if(f==='prof'){const me=curUser();if(S.users.some(u=>u.id!==me.id&&u.email.toLowerCase()===d.email.toLowerCase())){toast('That email is already used by another account');return}Object.assign(me,d);S.me=d.name;log(S.me+' updated their profile');toast('Profile saved');render()}
+if(f==='pw'){const me=curUser();if(d.cur!==me.pass){toast('Current password is incorrect');return}me.pass=d.new;toast('Password updated');e.target.reset()}
+if(f==='msg'){S.updates.unshift({eid:+d.eid,msg:d.msg,date:new Date().toISOString().slice(0,10)});log('Message sent for "'+evName(d.eid)+'"');toast('Message delivered to registered attendees');e.target.reset()}});
+/* ---------- Persistence: keep this browser's data across reloads and re-logins ---------- */
+const STORE_KEY='gatherly_demo_v1';
+function saveState(){
+ try{localStorage.setItem(STORE_KEY,JSON.stringify({users:S.users,events:S.events,regs:S.regs,updates:S.updates,log:S.log,set:S.set,uid:uid}))}catch(e){/* storage unavailable — app still works, just won't remember */}
+}
+function loadState(){
+ try{
+  const raw=localStorage.getItem(STORE_KEY);if(!raw)return false;
+  const d=JSON.parse(raw);
+  ['users','events','regs','updates','log','set'].forEach(k=>{if(d[k]!==undefined)S[k]=d[k]});
+  if(typeof d.uid==='number')uid=d.uid;
+  return true;
+ }catch(e){return false}
+}
+function resetDemoData(){
+ if(!confirm("Reset all demo data back to the original sample accounts and events? This clears what's saved in this browser."))return;
+ try{localStorage.removeItem(STORE_KEY)}catch(e){}
+ location.reload();
+}
+const hadSavedData=loadState();
+render();
+if(hadSavedData && !S.role) toast('Welcome back — your demo data from this browser is still here');
+
+/* ---------- Custom cursor: dot + lagging ring, matches whichever theme is active ---------- */
+(function initCursor(){
+ const isTouch=matchMedia('(pointer:coarse)').matches;
+ const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+ if(isTouch) return; // no mouse to follow — leave the native (touch) cursor alone
+ document.documentElement.classList.add('has-custom-cursor');
+ const dot=document.createElement('div');dot.id='cur-dot';dot.style.opacity='0';
+ const ring=document.createElement('div');ring.id='cur-ring';ring.style.opacity='0';
+ document.body.append(dot,ring);
+ let mx=innerWidth/2,my=innerHeight/2,rx=mx,ry=my,shown=false;
+ const clickable='a,button,[role=button],input,select,textarea,.chip,.card,.ev-card,.team-card,.logout-btn,.nav';
+ const fieldTags=['INPUT','TEXTAREA','SELECT'];
+ addEventListener('mousemove',e=>{
+  mx=e.clientX;my=e.clientY;dot.style.left=mx+'px';dot.style.top=my+'px';
+  if(!shown){shown=true;dot.style.opacity=1;ring.style.opacity=1}
+  const el=e.target.closest(clickable);
+  const isField=el&&fieldTags.includes(el.tagName);
+  ring.classList.toggle('hover',!!el&&!isField);
+  dot.classList.toggle('text-field',!!isField);ring.classList.toggle('text-field',!!isField);
+ },{passive:true});
+ addEventListener('mousedown',()=>ring.classList.add('press'));
+ addEventListener('mouseup',()=>ring.classList.remove('press'));
+ addEventListener('mouseleave',()=>{dot.style.opacity=0;ring.style.opacity=0});
+ (function loop(){
+  rx+=(mx-rx)*(reduced?1:.18);ry+=(my-ry)*(reduced?1:.18);
+  ring.style.left=rx+'px';ring.style.top=ry+'px';
+  requestAnimationFrame(loop);
+ })();
+})();
+</script>
+</body>
+</html>
